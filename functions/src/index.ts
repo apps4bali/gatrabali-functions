@@ -1,10 +1,77 @@
 import * as functions from 'firebase-functions'
+import * as admin from 'firebase-admin'
 
+import { fetchCategories, fetchFeed, fetchEntry} from './request'
+
+admin.initializeApp();
+
+enum EntityType {Category = 'CATEGORY', Feed = 'FEED', Entry = 'ENTRY'}
+enum Operation {Write = 'WRITE', Delete = 'DELETE'}
+
+const entityTypes = [EntityType.Category, EntityType.Feed, EntityType.Entry]
+const operations = [Operation.Write, Operation.Delete]
+const firestore = admin.firestore()
+
+/**
+ * Validate message received from pubsub.
+ */
+function messageIsValid(message: any): boolean {
+    if (message.entity_id === undefined) return false
+    if (message.entity_type === undefined || entityTypes.indexOf(message.entity_type) < 0) return false
+    if (message.entity_op === undefined || operations.indexOf(message.entity_op) < 0) return false
+    return true
+}
+
+/**
+ * Sync Categories
+ * If Operation.Write = Fetch all categories (because Miniflux doesn't provide GET single category API), sync in batch.
+ * If Operation.Delete = Delete category by its ID
+ */
+async function syncCategory(message: any) {
+    if (message.entity_op === Operation.Write){
+        return fetchCategories()
+        .then(categories => {
+            console.log(`About to save ${categories.length} categories...`)
+            const batch = firestore.batch()
+            categories.forEach(cat => {
+                batch.set(firestore.collection('categories').doc(String(cat.id)), cat.toObject())
+            });
+            return batch.commit()
+        })
+        .catch(err => console.log(err))
+    } else {
+        console.log(`About to delete category with id=${message.entity_id}...`)
+        return firestore.collection('categories').doc(String(message.entity_id)).delete()
+    }
+}
+
+/**
+ * 
+ */
 export const DataSyncer = functions.pubsub.topic("SyncData").onPublish((message, context) => {
-    console.log(`DataSyncer triggered at: ${context.timestamp}, message: ${JSON.stringify(message.json)}`);
-    // TODO:
-    // - Call miniflux API
-    // - Cleanup the response
-    // - Store to firestore.
+    console.log(`DataSyncer triggered at: ${context.timestamp}, message: ${JSON.stringify(message.json)}`)
+
+    const msg = message.json
+    if (!messageIsValid(msg)) {
+        console.log(`Message invalid: ${JSON.stringify(msg)}`)
+        return false
+    }
+
+    switch(msg.entity_type) {
+        case EntityType.Category: {
+            return syncCategory(msg)
+        }
+
+        case EntityType.Feed: {
+            // TODO
+            break
+        }
+
+        case EntityType.Entry: {
+            // TODO
+            break
+        }
+    }
+
     return true
 })
