@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Category } from './models'
+import { Category, Feed } from './models'
 
 // TODO: Move variables below to ENV variables
 const minifluxHost = "http://localhost:8080"
@@ -15,7 +15,7 @@ const Axios = axios.create({
     },
 });
 
-// fetch category list from miniflux and return 
+// fetch category list from miniflux 
 export async function fetchCategories() {
     return Axios.get(`/v1/categories`)
     .then(resp => {
@@ -30,13 +30,24 @@ export async function fetchCategories() {
     })
 }
 
+// fetch feed from miniflux
 export async function fetchFeed(feedId) {
     return Axios.get(`/v1/feeds/${feedId}`)
-    .then(resp => {
-        console.log('TODO')
+    .then(resp => new Feed(resp.data))
+    .then(async feed => {
+        return Axios.get(`/v1/feeds/${feedId}/icon`)
+        .then(resp => {
+            const data = resp.data
+            return feed.setIcon(data.id, data.mime_type, data.data)
+        })
+        .catch(err => {
+            // if error during fetching the icon, just return the feed without icon.
+            return feed
+        })
     })
 }
 
+// fetch feed entry from miniflux
 export async function fetchEntry(entryId) {
     return Axios.get(`/v1/entries/${entryId}`)
     .then(resp => {

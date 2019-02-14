@@ -7,6 +7,7 @@ admin.initializeApp();
 
 enum EntityType {Category = 'CATEGORY', Feed = 'FEED', Entry = 'ENTRY'}
 enum Operation {Write = 'WRITE', Delete = 'DELETE'}
+enum Collection {Categories = 'categories', Feeds = 'feeds', Entries = 'entries'}
 
 const entityTypes = [EntityType.Category, EntityType.Feed, EntityType.Entry]
 const operations = [Operation.Write, Operation.Delete]
@@ -34,14 +35,33 @@ async function syncCategory(message: any) {
             console.log(`About to save ${categories.length} categories...`)
             const batch = firestore.batch()
             categories.forEach(cat => {
-                batch.set(firestore.collection('categories').doc(String(cat.id)), cat.toObject())
+                batch.set(firestore.collection(Collection.Categories).doc(String(cat.id)), cat.toObject())
             });
             return batch.commit()
         })
         .catch(err => console.log(err))
     } else {
         console.log(`About to delete category with id=${message.entity_id}...`)
-        return firestore.collection('categories').doc(String(message.entity_id)).delete()
+        return firestore.collection(Collection.Categories).doc(String(message.entity_id)).delete()
+    }
+}
+
+/**
+ * Sync Feed
+ * If Operation.Write = Sync feed by its ID
+ * If Operation.Delete = Delete category by its ID
+ */
+async function syncFeed(message: any) {
+    if (message.entity_op === Operation.Write){
+        return fetchFeed(message.entity_id)
+        .then(feed => {
+            console.log(`About to save feed with id=${feed.id}...`)
+            return firestore.collection(Collection.Feeds).doc(String(feed.id)).set(feed.toObject())
+        })
+        .catch(err => console.log(`Failed to fetch Feed with id=${message.entity_id}, err: ${err.message}`))
+    } else {
+        console.log(`About to delete feed with id=${message.entity_id}...`)
+        return firestore.collection(Collection.Feeds).doc(String(message.entity_id)).delete()
     }
 }
 
@@ -58,15 +78,8 @@ export const DataSyncer = functions.pubsub.topic("SyncData").onPublish((message,
     }
 
     switch(msg.entity_type) {
-        case EntityType.Category: {
-            return syncCategory(msg)
-        }
-
-        case EntityType.Feed: {
-            // TODO
-            break
-        }
-
+        case EntityType.Category: return syncCategory(msg)
+        case EntityType.Feed: return syncFeed(msg)
         case EntityType.Entry: {
             // TODO
             break
