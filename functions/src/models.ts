@@ -87,8 +87,7 @@ export class Entry extends Objectify {
             this.enclosures = response.enclosures.map((enc) => {
                 return {
                     url: enc.url,
-                    mime_type: enc.mime_type,
-                    size: enc.size
+                    mime_type: enc.mime_type
                 }
             })
         }
