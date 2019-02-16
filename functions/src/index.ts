@@ -77,7 +77,7 @@ async function syncEntry(message: any) {
             console.log(`About to save entry with id=${entry.id}...`)
             return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
         })
-        .catch(err => console.log(`Failed to fetch Feed with id=${message.entity_id}, err: ${err.message}`))
+        .catch(err => console.log(`Failed to fetch Entry with id=${message.entity_id}, err: ${err.message}`))
     } else {
         console.log(`About to delete entry with id=${message.entity_id}...`)
         return firestore.collection(Collection.Entries).doc(String(message.entity_id)).delete()
