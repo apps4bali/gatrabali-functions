@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Category, Feed } from './models'
+import { Category, Feed, Entry } from './models'
 
 // TODO: Move variables below to ENV variables
 const minifluxHost = "http://localhost:8080"
@@ -50,7 +50,5 @@ export async function fetchFeed(feedId) {
 // fetch feed entry from miniflux
 export async function fetchEntry(entryId) {
     return Axios.get(`/v1/entries/${entryId}`)
-    .then(resp => {
-        console.log('TODO')
-    })
+    .then(resp => new Entry(resp.data))
 }

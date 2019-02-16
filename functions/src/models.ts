@@ -45,3 +45,52 @@ export class Feed extends Objectify {
         return this
     }
 }
+
+export class Entry extends Objectify {
+    id: number
+    user_id: number
+    feed_id: number
+    hash: string
+    title: string
+    url: string
+    comments_url: string
+    published_at: number
+    content: string
+    author: string
+    enclosures: any[]
+    categories: number[]
+
+    constructor(response: any) {
+        super()
+        this.id = response.id
+        this.user_id = response.user_id
+        this.feed_id = response.feed_id
+        this.hash = response.hash
+        this.title = response.title
+        this.url = response.url
+        this.published_at = Date.parse(response.published_at)
+        this.content = response.content.trim()
+
+        if(response.author) {
+            this.author = response.author
+        }
+
+        if(response.comments_url) {
+            this.comments_url = response.comments_url
+        }
+
+        if(response.feed && response.feed.category) {
+            this.categories = [response.feed.category.id]
+        }
+
+        if(response.enclosures) {
+            this.enclosures = response.enclosures.map((enc) => {
+                return {
+                    url: enc.url,
+                    mime_type: enc.mime_type,
+                    size: enc.size
+                }
+            })
+        }
+    }
+}

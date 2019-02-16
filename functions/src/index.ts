@@ -49,7 +49,7 @@ async function syncCategory(message: any) {
 /**
  * Sync Feed
  * If Operation.Write = Sync feed by its ID
- * If Operation.Delete = Delete category by its ID
+ * If Operation.Delete = Delete feed by its ID
  */
 async function syncFeed(message: any) {
     if (message.entity_op === Operation.Write){
@@ -62,6 +62,25 @@ async function syncFeed(message: any) {
     } else {
         console.log(`About to delete feed with id=${message.entity_id}...`)
         return firestore.collection(Collection.Feeds).doc(String(message.entity_id)).delete()
+    }
+}
+
+/**
+ * Sync Entry
+ * If Operation.Write = Sync entry by its ID
+ * If Operation.Delete = Delete entry by its ID
+ */
+async function syncEntry(message: any) {
+    if (message.entity_op === Operation.Write){
+        return fetchEntry(message.entity_id)
+        .then(entry => {
+            console.log(`About to save entry with id=${entry.id}...`)
+            return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
+        })
+        .catch(err => console.log(`Failed to fetch Feed with id=${message.entity_id}, err: ${err.message}`))
+    } else {
+        console.log(`About to delete entry with id=${message.entity_id}...`)
+        return firestore.collection(Collection.Entries).doc(String(message.entity_id)).delete()
     }
 }
 
@@ -80,11 +99,7 @@ export const DataSyncer = functions.pubsub.topic("SyncData").onPublish((message,
     switch(msg.entity_type) {
         case EntityType.Category: return syncCategory(msg)
         case EntityType.Feed: return syncFeed(msg)
-        case EntityType.Entry: {
-            // TODO
-            break
-        }
+        case EntityType.Entry: return syncEntry(msg)
     }
-
     return true
 })
