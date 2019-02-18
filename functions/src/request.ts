@@ -1,10 +1,12 @@
+import * as functions from 'firebase-functions'
+
 import axios from 'axios'
 import { Category, Feed, Entry } from './models'
 
-// TODO: Move variables below to ENV variables
-const minifluxHost = "http://localhost:8080"
-const minifluxUsername = "admin"
-const minifluxPasswd = "password"
+const config = functions.config()
+const minifluxHost = (config.miniflux && config.miniflux.host) ? config.miniflux.host : "http://localhost:8080"
+const minifluxUsername = (config.miniflux && config.miniflux.username) ? config.miniflux.username : "admin"
+const minifluxPasswd = (config.miniflux && config.miniflux.passwd) ? config.miniflux.passwd : "password"
 
 const Axios = axios.create({
     baseURL: minifluxHost,
