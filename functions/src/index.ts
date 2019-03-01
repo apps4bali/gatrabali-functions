@@ -1,13 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
-import { fetchCategories, fetchFeed, fetchEntry} from './request'
+import { fetchCategories, fetchFeed, fetchEntry } from './request'
 
 admin.initializeApp();
 
-enum EntityType {Category = 'CATEGORY', Feed = 'FEED', Entry = 'ENTRY'}
-enum Operation {Write = 'WRITE', Delete = 'DELETE'}
-enum Collection {Categories = 'categories', Feeds = 'feeds', Entries = 'entries'}
+enum EntityType { Category = 'CATEGORY', Feed = 'FEED', Entry = 'ENTRY' }
+enum Operation { Write = 'WRITE', Delete = 'DELETE' }
+enum Collection { Categories = 'categories', Feeds = 'feeds', Entries = 'entries' }
 
 const entityTypes = [EntityType.Category, EntityType.Feed, EntityType.Entry]
 const operations = [Operation.Write, Operation.Delete]
@@ -29,17 +29,17 @@ function messageIsValid(message: any): boolean {
  * If Operation.Delete = Delete category by its ID
  */
 async function syncCategory(message: any) {
-    if (message.entity_op === Operation.Write){
+    if (message.entity_op === Operation.Write) {
         return fetchCategories()
-        .then(categories => {
-            console.log(`About to save ${categories.length} categories...`)
-            const batch = firestore.batch()
-            categories.forEach(cat => {
-                batch.set(firestore.collection(Collection.Categories).doc(String(cat.id)), cat.toObject())
-            });
-            return batch.commit()
-        })
-        .catch(err => console.log(err))
+            .then(categories => {
+                console.log(`About to save ${categories.length} categories...`)
+                const batch = firestore.batch()
+                categories.forEach(cat => {
+                    batch.set(firestore.collection(Collection.Categories).doc(String(cat.id)), cat.toObject())
+                });
+                return batch.commit()
+            })
+            .catch(err => console.log(err))
     } else {
         console.log(`About to delete category with id=${message.entity_id}...`)
         return firestore.collection(Collection.Categories).doc(String(message.entity_id)).delete()
@@ -52,13 +52,13 @@ async function syncCategory(message: any) {
  * If Operation.Delete = Delete feed by its ID
  */
 async function syncFeed(message: any) {
-    if (message.entity_op === Operation.Write){
+    if (message.entity_op === Operation.Write) {
         return fetchFeed(message.entity_id)
-        .then(feed => {
-            console.log(`About to save feed with id=${feed.id}...`)
-            return firestore.collection(Collection.Feeds).doc(String(feed.id)).set(feed.toObject())
-        })
-        .catch(err => console.log(`Failed to fetch Feed with id=${message.entity_id}, err: ${err.message}`))
+            .then(feed => {
+                console.log(`About to save feed with id=${feed.id}...`)
+                return firestore.collection(Collection.Feeds).doc(String(feed.id)).set(feed.toObject())
+            })
+            .catch(err => console.log(`Failed to fetch Feed with id=${message.entity_id}, err: ${err.message}`))
     } else {
         console.log(`About to delete feed with id=${message.entity_id}...`)
         return firestore.collection(Collection.Feeds).doc(String(message.entity_id)).delete()
@@ -71,13 +71,18 @@ async function syncFeed(message: any) {
  * If Operation.Delete = Delete entry by its ID
  */
 async function syncEntry(message: any) {
-    if (message.entity_op === Operation.Write){
+    if (message.entity_op === Operation.Write) {
         return fetchEntry(message.entity_id)
-        .then(entry => {
-            console.log(`About to save entry with id=${entry.id}...`)
-            return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
-        })
-        .catch(err => console.log(`Failed to fetch Entry with id=${message.entity_id}, err: ${err.message}`))
+            .then(entry => {
+                // only sync entry that has enclosures.
+                if (entry.enclosures) {
+                    console.log(`About to save entry with id=${entry.id}...`)
+                    return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
+                }
+                console.log(`Entry with id=${entry.id} not synced, no enclosures!`)
+                return new Promise((resolve, _) => resolve());
+            })
+            .catch(err => console.log(`Failed to fetch Entry with id=${message.entity_id}, err: ${err.message}`))
     } else {
         console.log(`About to delete entry with id=${message.entity_id}...`)
         return firestore.collection(Collection.Entries).doc(String(message.entity_id)).delete()
@@ -96,7 +101,7 @@ export const DataSyncer = functions.pubsub.topic("SyncData").onPublish((message,
         return false
     }
 
-    switch(msg.entity_type) {
+    switch (msg.entity_type) {
         case EntityType.Category: return syncCategory(msg)
         case EntityType.Feed: return syncFeed(msg)
         case EntityType.Entry: return syncEntry(msg)
