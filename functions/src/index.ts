@@ -73,13 +73,21 @@ async function syncFeed(message: any) {
 async function syncEntry(message: any) {
     if (message.entity_op === Operation.Write) {
         return fetchEntry(message.entity_id)
-            .then(entry => {
-                // only sync entry that has enclosures.
-                if (entry.enclosures) {
-                    console.log(`About to save entry with id=${entry.id}...`)
-                    return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
+            .then(async entry => {
+                // only sync entry that has enclosures AND its an image AND the title is unique in the collection.
+                if (entry.enclosures && entry.enclosures[0]['mime_type'].indexOf('image') !== -1) {
+
+                    const querySnapshot = await firestore.collection(Collection.Entries).where('title', '==', entry.title).get();
+                    const isUpdate = querySnapshot.docs.filter(doc => doc.id === String(entry.id)).length === 1;
+                    if (querySnapshot.empty || isUpdate) {
+                        console.log(`About to save entry with id=${entry.id}...`)
+                        return firestore.collection(Collection.Entries).doc(String(entry.id)).set(entry.toObject())
+                    }
+                    console.log(`Entry with id=${entry.id} not synced, duplicate title!`)
+
+                } else {
+                    console.log(`Entry with id=${entry.id} not synced, no image enclosures!`)
                 }
-                console.log(`Entry with id=${entry.id} not synced, no enclosures!`)
                 return new Promise((resolve, _) => resolve());
             })
             .catch(err => console.log(`Failed to fetch Entry with id=${message.entity_id}, err: ${err.message}`))
