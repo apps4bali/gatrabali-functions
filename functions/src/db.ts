@@ -1,6 +1,22 @@
 import * as admin from 'firebase-admin'
 
 /**
+ * Returns all feeds
+ */
+export async function getFeeds() {
+    return admin.firestore().collection('feeds')
+        .get()
+        .then(snapshot => {
+            if (snapshot.empty) return []
+            return snapshot.docs.map(doc => doc.data())
+        })
+        .catch(err => {
+            console.log(`[Error] db.getFeeds(), ${err}`)
+            return []
+        })
+}
+
+/**
  * Returns paginated list of feed entry
  * This function should never return an exception, exception are logged and will return empty list.
  * @param cursor 

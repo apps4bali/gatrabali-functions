@@ -9,6 +9,10 @@
     "public": "public",
     "rewrites": [
       {
+        "source": "/api/v1/feeds",
+        "function": "ApiFeeds"
+      },
+      {
         "source": "/api/v1/news",
         "function": "ApiNews"
       },
