@@ -11,7 +11,12 @@ function setCacheControl(res, maxAge = 3600, sMaxAge = 3600) {
  * Returns summary of news in eacy category/regency.
  */
 export const ApiCategoryNewsSummary = functions.https.onRequest((req, res) => {
-    return res.json({ api_name: 'ApiCategoryNewsSummary' })
+    return db.getCategoryNewsSummary()
+        .then(summaries => {
+            if (summaries.length > 0) setCacheControl(res)
+            res.json(summaries)
+        })
+        .catch(_ => res.status(500).send('Internal Server Error'))
 })
 
 /**

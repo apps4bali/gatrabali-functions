@@ -53,3 +53,44 @@ export async function getNewsByCategoryId(categoryId, cursor, limit) {
             return []
         })
 }
+
+/**
+ * Returns summary of a category (the category and top 3 latest news)
+ * @param category {id, name}
+ */
+export async function getCategorySummary(category) {
+    return getNewsByCategoryId(category.id, null, 3)
+        .then(news => {
+            if (news.length === 0) return null
+            category.news = news
+            return category
+        })
+        .catch(err => {
+            console.log(`[Error] db.getCategorySummary(${category}), ${err}`)
+            return null
+        })
+}
+
+/**
+ * Returns list of Category and latest 3 of news in that category.
+ */
+export async function getCategoryNewsSummary() {
+
+    // Get all categories
+    return admin.firestore().collection('categories')
+        .orderBy('id')
+        .get()
+        .then(snapshot => {
+            if (snapshot.empty) return []
+
+            const promises = snapshot.docs.map(doc => getCategorySummary(doc.data())) // only get 3 latest news
+            return Promise.all(promises)
+        })
+        .then(results => {
+            return results.filter(res => res !== null)
+        })
+        .catch(err => {
+            console.log(`[Error] db.getCategoryNewsSummary(), ${err}`)
+            return []
+        })
+}
