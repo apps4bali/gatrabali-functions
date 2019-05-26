@@ -4,5 +4,18 @@
       "npm --prefix \"$RESOURCE_DIR\" run lint",
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
+  },
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/api/v1/news",
+        "function": "ApiNews"
+      },
+      {
+        "source": "/api/v1/category_news_summary",
+        "function": "ApiCategoryNewsSummary"
+      }
+    ]
   }
 }
