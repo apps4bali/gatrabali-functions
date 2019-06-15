@@ -12,7 +12,7 @@ function setCacheControl(res, maxAge = 3600, sMaxAge = 3600) {
 export const ApiFeeds = functions.https.onRequest((req, res) => {
     return db.getFeeds()
         .then(feeds => {
-            if (feeds.length > 0) setCacheControl(res, 86400, 86400) // cache 24hr since it won't change to often
+            if (feeds.length > 0) setCacheControl(res)
             res.json(feeds)
         })
         .catch(_ => res.status(500).send('Internal Server Error'))
